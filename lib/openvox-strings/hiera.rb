@@ -114,11 +114,9 @@ module OpenvoxStrings
     def value_to_puppet_string(value)
       case value
       when String
-        # Empty strings from YAML nil (~) should be undef
-        return 'undef' if value.empty?
-
-        # Strings should be quoted
-        "'#{value}'"
+        # Strings should be quoted, escaping quotes and any backslash that would otherwise start an escape
+        escaped = value.gsub(/\\(?=[\\']|\z)|'/) { |m| "\\#{m}" }
+        "'#{escaped}'"
       when Integer, Float, TrueClass, FalseClass
         # Numbers and booleans are unquoted/lowercase
         value.to_s
@@ -129,7 +127,7 @@ module OpenvoxStrings
         # Convert hash to Puppet hash syntax (no spaces to match code defaults format)
         return '{}' if value.empty?
 
-        pairs = value.map { |k, v| "'#{k}' => #{value_to_puppet_string(v)}" }
+        pairs = value.map { |k, v| "#{value_to_puppet_string(k)} => #{value_to_puppet_string(v)}" }
         "{ #{pairs.join(', ')} }"
       when Array
         # Convert array to Puppet array syntax (no spaces to match code defaults format)

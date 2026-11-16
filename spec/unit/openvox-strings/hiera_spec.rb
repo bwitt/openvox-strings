@@ -358,6 +358,19 @@ describe OpenvoxStrings::Hiera do
       expect(hiera.send(:value_to_puppet_string, 'hello')).to eq("'hello'")
     end
 
+    it 'converts empty strings to an empty quoted string' do
+      expect(hiera.send(:value_to_puppet_string, '')).to eq("''")
+    end
+
+    it 'escapes single quotes in strings' do
+      expect(hiera.send(:value_to_puppet_string, "it's")).to eq("'it\\'s'")
+    end
+
+    it 'escapes backslashes only where needed in strings' do
+      expect(hiera.send(:value_to_puppet_string, 'C:\\temp\\')).to eq("'C:\\temp\\\\'")
+      expect(hiera.send(:value_to_puppet_string, 'a\\\\b')).to eq("'a\\\\\\b'")
+    end
+
     it 'converts integers without quotes' do
       expect(hiera.send(:value_to_puppet_string, 42)).to eq('42')
     end
@@ -393,6 +406,11 @@ describe OpenvoxStrings::Hiera do
     it 'converts hashes with values' do
       result = hiera.send(:value_to_puppet_string, { 'key' => 'value' })
       expect(result).to eq("{ 'key' => 'value' }")
+    end
+
+    it 'converts hash keys like values' do
+      result = hiera.send(:value_to_puppet_string, { 1 => 'one', "it's" => true })
+      expect(result).to eq("{ 1 => 'one', 'it\\'s' => true }")
     end
 
     it 'converts nested structures' do
