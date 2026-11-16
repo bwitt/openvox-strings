@@ -226,6 +226,25 @@ describe OpenvoxStrings::Hiera do
       end
     end
 
+    context 'when file uses YAML aliases' do
+      before do
+        FileUtils.mkdir_p(File.join(temp_dir, 'data'))
+        File.write(File.join(temp_dir, 'data', 'aliases.yaml'), <<~YAML)
+          key1: &packages
+            - foo
+            - bar
+          key2: *packages
+        YAML
+      end
+
+      it 'resolves the aliases' do
+        hiera = described_class.new(temp_dir)
+        file_path = File.join(temp_dir, 'data', 'aliases.yaml')
+        result = hiera.send(:load_yaml_data, file_path)
+        expect(result['key2']).to eq(%w[foo bar])
+      end
+    end
+
     context 'when file does not exist' do
       it 'returns nil' do
         hiera = described_class.new(temp_dir)

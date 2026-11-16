@@ -92,7 +92,8 @@ module OpenvoxStrings
       return nil unless File.exist?(file_path)
 
       begin
-        YAML.load_file(file_path)
+        # Match Hiera's yaml_data backend, which permits symbols and aliases
+        YAML.safe_load_file(file_path, permitted_classes: [Symbol], aliases: true)
       rescue StandardError => e
         YARD::Logger.instance.warn "Failed to parse #{File.basename(file_path)}: #{e.message}"
         nil
