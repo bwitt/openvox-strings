@@ -227,7 +227,8 @@ module OpenvoxStrings::Markdown
     # Initializes Hiera integration for this component
     # @return [OpenvoxStrings::Hiera, nil] Hiera instance or nil if not available
     def initialize_hiera
-      return nil unless @registry[:file]
+      # Hiera automatic parameter lookup only applies to classes
+      return nil unless @type == 'class' && @registry[:file]
 
       # Find the module root directory from the file path
       # Puppet modules have manifests/, lib/, data/ etc. at the root

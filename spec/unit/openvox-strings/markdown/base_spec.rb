@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
+require 'tmpdir'
 
 describe OpenvoxStrings::Markdown::Base do
   context 'basic class' do
@@ -153,6 +154,47 @@ describe OpenvoxStrings::Markdown::Base do
     describe '#link' do
       it 'returns a valid link' do
         expect(component.link).to eq 'klass--yeah'
+      end
+    end
+  end
+
+  context 'with Hiera data in the module' do
+    let(:module_dir) { Dir.mktmpdir }
+    let(:reg) do
+      {
+        name: 'mymod::thing',
+        file: File.join(module_dir, 'manifests', 'thing.pp'),
+        docstring: {
+          text: 'An overview',
+          tags: [{ tag_name: 'param', name: 'param1', text: 'First param.', types: ['String'] }],
+        },
+      }
+    end
+
+    before do
+      FileUtils.mkdir_p(File.join(module_dir, 'manifests'))
+      FileUtils.mkdir_p(File.join(module_dir, 'data'))
+      File.write(File.join(module_dir, 'metadata.json'), '{}')
+      File.write(File.join(module_dir, 'hiera.yaml'), <<~YAML)
+        version: 5
+        hierarchy:
+          - name: common
+            path: common.yaml
+      YAML
+      File.write(File.join(module_dir, 'data', 'common.yaml'), "mymod::thing::param1: 'hiera'\n")
+    end
+
+    after do
+      FileUtils.remove_entry(module_dir)
+    end
+
+    it 'uses Hiera defaults for classes' do
+      expect(described_class.new(reg, 'class').defaults).to eq('param1' => "'hiera'")
+    end
+
+    ['defined type', 'plan', 'data type'].each do |type|
+      it "ignores Hiera defaults for a #{type}" do
+        expect(described_class.new(reg, type).defaults).to be_nil
       end
     end
   end
